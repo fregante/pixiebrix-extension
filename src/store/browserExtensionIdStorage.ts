@@ -15,33 +15,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { forbidContext } from "@/utils/expectContext";
+// import { forbidContext } from "@/utils/expectContext";
+//
+// const CHROME_EXTENSION_STORAGE_KEY = "chrome_extension_id";
+//
+// // Used only in the app
+// export function setChromeExtensionId(extensionId = ""): void {
+//   forbidContext("extension");
+//
+//   extensionId = extensionId.trim();
+//   if (extensionId) {
+//     localStorage.removeItem(CHROME_EXTENSION_STORAGE_KEY);
+//   } else {
+//     localStorage.setItem(CHROME_EXTENSION_STORAGE_KEY, extensionId);
+//   }
+// }
 
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- The build fails without this
-const CHROME_EXTENSION_ID = process.env.CHROME_EXTENSION_ID!;
-const CHROME_EXTENSION_STORAGE_KEY = "chrome_extension_id";
-
-// Used only in the app
-export function setChromeExtensionId(extensionId = ""): void {
-  forbidContext("extension");
-
-  extensionId = extensionId.trim();
-  if (extensionId) {
-    localStorage.removeItem(CHROME_EXTENSION_STORAGE_KEY);
-  } else {
-    localStorage.setItem(CHROME_EXTENSION_STORAGE_KEY, extensionId);
-  }
-}
-
-// Used only in the app
-export function getChromeExtensionId(): string {
-  forbidContext("extension");
-
-  // return (
-  //   localStorage.getItem(CHROME_EXTENSION_STORAGE_KEY) ?? CHROME_EXTENSION_ID
-  // );
-
-  console.log("HERE");
-
-  return document.body.dataset.chromeExtensionId;
-}
+// // Used only in the app
+// export function getChromeExtensionId(): string | undefined {
+//   forbidContext("extension");
+//
+//   return (
+//     localStorage.getItem(CHROME_EXTENSION_STORAGE_KEY) ??
+//     document.body.dataset.chromeExtensionId
+//   );
+// }

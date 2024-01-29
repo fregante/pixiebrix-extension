@@ -31,7 +31,6 @@ import {
   type RemoteProcedureCallRequest,
 } from "@/utils/legacyMessengerUtils";
 import { RuntimeNotFoundError } from "@/utils/extensionUtils";
-import { getChromeExtensionId } from "@/store/browserExtensionIdStorage";
 import { type SerializableResponse } from "@/types/messengerTypes";
 import { assertNotNullish } from "@/utils/nullishUtils";
 
@@ -114,7 +113,12 @@ async function callBackground(
   const sendMessage = isExtensionContext()
     ? browser.runtime.sendMessage
     : chromeP.runtime.sendMessage;
-  const extensionId = isExtensionContext() ? undefined : getChromeExtensionId();
+
+  // If we're not in the Extension context, then we're in the App context.
+  // We can grab the Chrome Extension ID from the body's dataset, see setExtensionIdInApp.ts
+  const extensionId = isExtensionContext()
+    ? undefined
+    : document.body.dataset.chromeExtensionId;
   console.log("extensionId", extensionId);
 
   if (isNotification(options)) {
