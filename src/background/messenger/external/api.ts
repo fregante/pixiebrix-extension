@@ -24,9 +24,12 @@ import { _liftBackground as liftExternal } from "@/background/externalProtocol";
 import * as local from "@/background/messenger/external/_implementation";
 import { readPartnerAuthData } from "@/auth/token";
 
-export const connectPage = liftExternal("CONNECT_PAGE", async () =>
-  browser.runtime.getManifest(),
-);
+export const connectPage = liftExternal("CONNECT_PAGE", async () => {
+  console.log("YOOOOOOOO 123");
+  console.log(browser.runtime);
+  console.log(browser.runtime.getManifest());
+  return browser.runtime.getManifest();
+});
 
 export const setExtensionAuth = liftExternal(
   "SET_EXTENSION_AUTH",

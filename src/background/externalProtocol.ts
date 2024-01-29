@@ -115,6 +115,7 @@ async function callBackground(
     ? browser.runtime.sendMessage
     : chromeP.runtime.sendMessage;
   const extensionId = isExtensionContext() ? undefined : getChromeExtensionId();
+  console.log("extensionId", extensionId);
 
   if (isNotification(options)) {
     console.debug(`Sending background notification ${type} (nonce: ${nonce})`, {

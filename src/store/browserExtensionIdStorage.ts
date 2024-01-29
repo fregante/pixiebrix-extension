@@ -37,7 +37,11 @@ export function setChromeExtensionId(extensionId = ""): void {
 export function getChromeExtensionId(): string {
   forbidContext("extension");
 
-  return (
-    localStorage.getItem(CHROME_EXTENSION_STORAGE_KEY) ?? CHROME_EXTENSION_ID
-  );
+  // return (
+  //   localStorage.getItem(CHROME_EXTENSION_STORAGE_KEY) ?? CHROME_EXTENSION_ID
+  // );
+
+  console.log("HERE");
+
+  return document.body.dataset.chromeExtensionId;
 }

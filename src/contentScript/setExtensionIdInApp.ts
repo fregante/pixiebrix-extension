@@ -20,4 +20,9 @@
 // which is behind a guarded dynamic import.
 // https://github.com/pixiebrix/webext-messenger/issues/88
 
+// console.log("chrome.runtime", chrome.runtime);
+// console.log("chrome.runtime.getManifest()", chrome.runtime.getManifest());
+console.log("chrome.runtime.id", chrome.runtime.id);
+// console.log("browser.runtime.getManifest()", browser.runtime.getManifest());
+
 document.body.dataset.chromeExtensionId = chrome.runtime.id;
