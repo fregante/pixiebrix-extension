@@ -30,7 +30,7 @@ import {
   type Organization,
   type Package,
   type PackageUpsertResponse,
-  type PackageVersion,
+  type PackageVersionSlim,
   type PendingInvitation,
   type RecipeResponse,
   type RemoteIntegrationConfig,
@@ -372,7 +372,7 @@ export const appApi = createApi({
         "EditablePackages",
       ],
     }),
-    listPackageVersions: builder.query<PackageVersion[], { id: UUID }>({
+    listPackageVersions: builder.query<PackageVersionSlim[], { id: UUID }>({
       query: ({ id }) => ({
         url: `/api/bricks/${id}/versions/`,
         method: "get",

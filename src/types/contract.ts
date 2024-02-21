@@ -102,7 +102,7 @@ export type Group = components["schemas"]["Group"];
 
 export type Database = components["schemas"]["Database"];
 
-export type PackageVersion = components["schemas"]["PackageVersion"];
+export type PackageVersionSlim = components["schemas"]["PackageVersionSlim"];
 
 export type PendingInvitation = components["schemas"]["PendingInvitation"];
 
@@ -163,9 +163,8 @@ export type Deployment = Except<
   package: Except<
     NonNullable<components["schemas"]["DeploymentDetail"]["package"]>,
     // Patch types for the following properties which our automatic schema generation generated the wrong types for
-    "config" | "id" | "package_id"
+    "config" | "package_id"
   > & {
-    id: UUID;
     package_id: RegistryId;
     config: ModDefinition;
   };

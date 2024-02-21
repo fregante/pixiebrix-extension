@@ -49,7 +49,7 @@ export interface paths {
     delete: operations["destroyPackage"];
   };
   "/api/bricks/{id}/versions/": {
-    get: operations["listPackageVersions"];
+    get: operations["listDeprecatedPackageVersions"];
   };
   "/api/databases/": {
     get: operations["listUserDatabases"];
@@ -266,7 +266,7 @@ export interface paths {
     get: operations["listOrganizationBricks"];
   };
   "/api/organizations/{organization_pk}/blueprints/": {
-    get: operations["listDeployableBlueprints"];
+    get: operations["listPackageVersionSlims"];
   };
   "/api/organizations/{organization_pk}/integrations/": {
     get: operations["listServiceAuthMetas"];
@@ -593,14 +593,12 @@ export interface components {
       /** @description Human-readable name */
       verbose_name?: string | null;
     };
-    PackageVersion: {
+    PackageVersionSlim: {
       /** Format: uuid */
-      id?: UUID;
+      id: UUID;
+      package_id: string;
+      name: string;
       version?: string;
-      config: {
-        [key: string]: unknown;
-      };
-      raw_config?: string;
       /** Format: date-time */
       created_at?: Timestamp;
       /** Format: date-time */
@@ -656,9 +654,13 @@ export interface components {
       package?: {
         /** Format: uuid */
         readonly id: UUID;
-        readonly version?: string;
         readonly package_id: string;
         readonly name: string;
+        readonly version?: string;
+        /** Format: date-time */
+        readonly created_at?: Timestamp;
+        /** Format: date-time */
+        readonly updated_at?: Timestamp;
       };
       package_version: string;
       services: {
@@ -769,9 +771,13 @@ export interface components {
       package?: {
         /** Format: uuid */
         readonly id: UUID;
-        readonly version?: string;
         readonly package_id: string;
         readonly name: string;
+        readonly version?: string;
+        /** Format: date-time */
+        readonly created_at?: Timestamp;
+        /** Format: date-time */
+        readonly updated_at?: Timestamp;
         readonly config?: {
           [key: string]: unknown;
         };
@@ -818,9 +824,13 @@ export interface components {
       package?: {
         /** Format: uuid */
         readonly id: UUID;
-        readonly version?: string;
         readonly package_id: string;
         readonly name: string;
+        readonly version?: string;
+        /** Format: date-time */
+        readonly created_at?: Timestamp;
+        /** Format: date-time */
+        readonly updated_at?: Timestamp;
         readonly config?: {
           [key: string]: unknown;
         };
@@ -1425,15 +1435,6 @@ export interface components {
       num_members?: number;
       /** Format: date-time */
       created_at?: Timestamp;
-    };
-    DeployableBlueprint: {
-      /** Format: uuid */
-      id?: UUID;
-      /** Format: uuid */
-      package_id: UUID;
-      registry_id: string;
-      name: string;
-      version?: string;
     };
     ServiceAuthMeta: {
       /** Format: uuid */
@@ -2167,7 +2168,7 @@ export interface operations {
       };
     };
   };
-  listPackageVersions: {
+  listDeprecatedPackageVersions: {
     parameters: {
       query?: {
         /** @description A page number within the paginated result set. */
@@ -2189,8 +2190,8 @@ export interface operations {
           Link?: unknown;
         };
         content: {
-          "application/json; version=2.0": components["schemas"]["PackageVersion"][];
-          "application/vnd.pixiebrix.api+json; version=2.0": components["schemas"]["PackageVersion"][];
+          "application/json; version=2.0": components["schemas"]["PackageVersionSlim"][];
+          "application/vnd.pixiebrix.api+json; version=2.0": components["schemas"]["PackageVersionSlim"][];
         };
       };
     };
@@ -2479,8 +2480,8 @@ export interface operations {
           Link?: unknown;
         };
         content: {
-          "application/json; version=2.0": components["schemas"]["PackageVersion"][];
-          "application/vnd.pixiebrix.api+json; version=2.0": components["schemas"]["PackageVersion"][];
+          "application/json; version=2.0": components["schemas"]["PackageVersionSlim"][];
+          "application/vnd.pixiebrix.api+json; version=2.0": components["schemas"]["PackageVersionSlim"][];
         };
       };
     };
@@ -4208,7 +4209,7 @@ export interface operations {
       };
     };
   };
-  listDeployableBlueprints: {
+  listPackageVersionSlims: {
     parameters: {
       query?: {
         /** @description A page number within the paginated result set. */
@@ -4230,8 +4231,8 @@ export interface operations {
           Link?: unknown;
         };
         content: {
-          "application/json; version=2.0": components["schemas"]["DeployableBlueprint"][];
-          "application/vnd.pixiebrix.api+json; version=2.0": components["schemas"]["DeployableBlueprint"][];
+          "application/json; version=2.0": components["schemas"]["PackageVersionSlim"][];
+          "application/vnd.pixiebrix.api+json; version=2.0": components["schemas"]["PackageVersionSlim"][];
         };
       };
     };
