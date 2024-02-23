@@ -30,7 +30,7 @@ import {
   type Organization,
   type Package,
   type PackageUpsertResponse,
-  type PackageVersion,
+  type PackageVersionSlim,
   type PendingInvitation,
   type RecipeResponse,
   type RemoteIntegrationConfig,
@@ -353,9 +353,21 @@ export const appApi = createApi({
       query: () => ({ url: "/api/webhooks/key/", method: "get" }),
       providesTags: ["ZapierKey"],
     }),
+    // TODO: This should be called getEditablePackage and getPackageVersion below should be called getPackage
     getPackage: builder.query<Package, { id: UUID }>({
       query: ({ id }) => ({ url: `/api/bricks/${id}/`, method: "get" }),
       providesTags: (result, error, { id }) => [{ type: "Package", id }],
+    }),
+    getPackageVersion: builder.query<
+      PackageConfigDetail,
+      { registryId: RegistryId; version?: string }
+    >({
+      query: ({ registryId, version }) => ({
+        url: `/api/registry/bricks/${encodeURIComponent(registryId)}/`,
+        method: "get",
+        params: { version },
+      }),
+      providesTags: buildTagsForGetInstance("Package", (x) => x.registryId),
     }),
     createPackage: builder.mutation<PackageUpsertResponse, UnknownObject>({
       query(data) {
@@ -396,7 +408,7 @@ export const appApi = createApi({
         "EditablePackages",
       ],
     }),
-    listPackageVersions: builder.query<PackageVersion[], { id: UUID }>({
+    listPackageVersions: builder.query<PackageVersionSlim[], { id: UUID }>({
       query: ({ id }) => ({
         url: `/api/bricks/${id}/versions/`,
         method: "get",

@@ -99,10 +99,16 @@ const BrickHistory: React.FunctionComponent<{
     setVersionA(currentVersion);
   }, [currentVersion]);
 
+  // useEffect(() => {
+  //   // Could use trigger here
+  //   // OR typical useQuery with refetchOnMountOrArgChange: true
+  // }, [versionA]);
+
   // We look up the large rawConfig up separately instead of including it in the versionOptions array because
   // it's a large string, and it causes the UI to hang.
   // TODO: use a specific endpoint for fetching just version metadata without the entire mod config
   //   https://github.com/pixiebrix/pixiebrix-app/issues/4627
+  // TODO: Update this
   const versionARawConfig = useMemo(
     () =>
       packageVersions?.find((version) => version.version === versionA?.value)

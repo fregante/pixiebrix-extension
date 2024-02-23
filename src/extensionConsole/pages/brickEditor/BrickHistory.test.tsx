@@ -25,8 +25,9 @@ import { uuidSequence } from "@/testUtils/factories/stringFactories";
 import selectEvent from "react-select-event";
 import { waitForEffect } from "@/testUtils/testHelpers";
 import { render } from "@/extensionConsole/testHelpers";
-import { type Package, type PackageVersion } from "@/types/contract";
+import { type Package, type PackageVersionSlim } from "@/types/contract";
 import { type Timestamp } from "@/types/stringTypes";
+import { type RegistryId } from "@/types/registryTypes";
 
 const axiosMock = new MockAdapter(axios);
 
@@ -35,37 +36,39 @@ const findDiffEditor = (container: HTMLElement) =>
   container.querySelector("#DIFF_EDITOR_DIV");
 
 describe("BrickHistory", () => {
-  const testBrickId = uuidSequence(1);
+  const testBrickVersionId = uuidSequence(1);
+  const testBrickRegistryId = "test-brick" as RegistryId;
+  const testBrickName = "Test Brick";
 
   const renderBrickHistory = async () => {
-    const utils = render(<BrickHistory brickId={testBrickId} />);
+    const utils = render(<BrickHistory brickId={testBrickVersionId} />);
     // Wait for the currentVersion effect to resolve
     await waitForEffect();
     return utils;
   };
 
   it("renders select components for choosing versions and displays the diff", async () => {
-    const testVersions: PackageVersion[] = [
+    const testVersions: PackageVersionSlim[] = [
       {
-        id: testBrickId,
+        id: testBrickVersionId,
         version: "1.0.1",
-        config: {},
-        raw_config: "some big yaml file",
+        package_id: testBrickRegistryId,
+        name: testBrickName,
         created_at: "2024-01-24T20:55:41.263846Z" as Timestamp,
         updated_at: "2024-01-26T23:58:12.270168Z" as Timestamp,
       },
       {
-        id: testBrickId,
+        id: testBrickVersionId,
         version: "1.0.0",
-        config: {},
-        raw_config: "some big yaml file2",
+        package_id: testBrickRegistryId,
+        name: testBrickName,
         created_at: "2024-01-20T16:55:41.263846Z" as Timestamp,
         updated_at: "2024-01-22T18:58:12.270168Z" as Timestamp,
       },
     ];
 
     const testPackage: Package = {
-      id: testBrickId,
+      id: testBrickVersionId,
       name: "@pixies/ai/chatgpt-sidebar",
       kind: "Blueprint",
       version: "1.0.1",

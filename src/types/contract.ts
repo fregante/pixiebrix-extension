@@ -102,7 +102,7 @@ export type Group = components["schemas"]["Group"];
 
 export type Database = components["schemas"]["Database"];
 
-export type PackageVersion = components["schemas"]["PackageVersion"];
+export type PackageVersionSlim = components["schemas"]["PackageVersionSlim"];
 
 export type PendingInvitation = components["schemas"]["PendingInvitation"];
 
@@ -163,9 +163,8 @@ export type Deployment = Except<
   package: Except<
     NonNullable<components["schemas"]["DeploymentDetail"]["package"]>,
     // Patch types for the following properties which our automatic schema generation generated the wrong types for
-    "config" | "id" | "package_id"
+    "config" | "package_id"
   > & {
-    id: UUID;
     package_id: RegistryId;
     config: ModDefinition;
   };
@@ -202,6 +201,27 @@ export type RegistryPackage = Pick<
    * @see https://github.com/pixiebrix/pixiebrix-app/blob/43f0a4b81d8b7aaaf11adbe7fd8e4530ca4b8bf0/api/serializers/brick.py#L204-L204
    */
   kind: "component" | "extensionPoint" | "recipe" | "service" | "reader";
+};
+
+export type PackageConfigDetail = Except<
+  components["schemas"]["PackageConfig"],
+  "config"
+> & {
+  /**
+   * Package registry id.
+   */
+  name: RegistryId;
+
+  /**
+   * The UnsavedModDefinition for the PackageVersion.
+   *
+   * NOTE: UnsavedModDefinition vs. ModDefinition distinction is a bit confusing. UnsavedModDefinition is raw
+   * content stored with the configuration. ModDefinition has been decorated with sharing information.
+   *
+   * @see UnsavedModDefinition
+   * @see ModDefinition
+   */
+  config: UnsavedModDefinition;
 };
 
 /**
