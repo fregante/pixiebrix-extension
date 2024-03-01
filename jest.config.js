@@ -40,8 +40,8 @@ const config = {
     "fake-indexeddb/auto",
   ],
   setupFilesAfterEnv: [
-    "<rootDir>/src/testUtils/testAfterEnv.ts",
-    "<rootDir>/src/testUtils/injectRegistries.ts",
+    // "<rootDir>/src/testUtils/testAfterEnv.ts",
+    // "<rootDir>/src/testUtils/injectRegistries.ts",
     "jest-extended/all",
   ],
   reporters: ["default", "github-actions"],
@@ -54,11 +54,11 @@ const config = {
     "!**/vendor/**",
   ],
   moduleNameMapper: {
-    "\\.s?css$": "identity-obj-proxy",
-    "\\.(gif|svg|png)$|\\?loadAsUrl$|\\?loadAsComponent$":
-      "<rootDir>/src/__mocks__/stringMock.js",
-    "^@contrib/(.*?)(\\?loadAsText)?$": "<rootDir>/contrib/$1",
-    "^@schemas/(.*)": "<rootDir>/schemas/$1",
+    // "\\.s?css$": "identity-obj-proxy",
+    // "\\.(gif|svg|png)$|\\?loadAsUrl$|\\?loadAsComponent$":
+    //   "<rootDir>/src/__mocks__/stringMock.js",
+    // "^@contrib/(.*?)(\\?loadAsText)?$": "<rootDir>/contrib/$1",
+    // "^@schemas/(.*)": "<rootDir>/schemas/$1",
 
     // Auto-mocks. See documentation in ./src/__mocks__/readme.md
     "^@/(.*)$": ["<rootDir>/src/__mocks__/@/$1", "<rootDir>/src/$1"],
