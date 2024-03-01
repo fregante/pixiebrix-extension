@@ -3,38 +3,12 @@
   "version": "1.8.11-alpha.1",
   "description": "PixieBrix Browser Extension",
   "scripts": {
-    "test": "TZ=UTC jest",
-    "test:watch": "TZ=UTC jest --watchAll",
-    "test:e2e": "playwright test",
-    "lint": "npm run lint:full -- --rule '{\"import/no-cycle\": \"off\"}'",
-    "lint:fast": "ESLINT_NO_IMPORTS=1 eslint src --ext js,jsx,ts,tsx --quiet",
-    "lint:full": "eslint src --ext js,jsx,ts,tsx --quiet --report-unused-disable-directives",
-    "fix": "npm run lint -- --fix",
-    "watch": "concurrently npm:watch:webpack 'npm:watch:*(!webpack) -- --preserveWatchOutput' -r",
-    "watch:webpack": "ENV_FILE='.env.development' webpack ${HMR:-watch} --mode development",
-    "watch:webpack-hmr": "HMR=serve npm run watch:webpack",
-    "watch:typescript": "tsc --noEmit --watch",
-    "watch:strictNullChecks": "npm run build:strictNullChecks -- --watch",
-    "build": "concurrently npm:build:webpack npm:build:typescript -r",
-    "build:webpack": "NODE_OPTIONS=--max_old_space_size=8192 webpack --mode production",
-    "build:typescript": "tsc --noEmit",
-    "build:strictNullChecks": "tsc --noEmit --project src/tsconfig.strictNullChecks.json",
-    "generate:headers": "npm run test -- src/development/headers.test.ts --no-silent",
-    "storybook": "storybook dev -p 6006 -s public",
-    "build-storybook": "storybook build",
-    "dead-code": "npm run dead-code:base -- --include files,duplicates,dependencies,classMembers,binaries,enumMembers,nsTypes,exports,nsExports",
-    "dead-code:base": "knip --config knip.mjs --experimental-tags=-knip"
-  },
-  "engine-strict": true,
-  "engines": {
-    "node": "20.5.1",
-    "npm": "10.2.5"
+    "test": "TZ=UTC jest"
   },
   "author": "Todd Schiller",
   "license": "AGPL-3.0",
   "repository": "https://github.com/pixiebrix/pixiebrix-extension",
   "dependencies": {
-
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",

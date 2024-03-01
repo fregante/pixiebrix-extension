@@ -1,7 +1,4 @@
 {
-  // You can see the full details at https://github.com/sindresorhus/tsconfig/blob/main/tsconfig.json
-  // Note: `strict: true` enables many flags that aren’t explicitly listed in that file
-  "extends": "@sindresorhus/tsconfig",
   "compilerOptions": {
     "sourceMap": true,
     "module": "ES2020",
@@ -24,7 +21,6 @@
         "src/contrib/uipath/quietLogger/*"
       ]
     },
-    "plugins": [{ "name": "typescript-plugin-css-modules" }]
   },
   "exclude": ["venv", "dist", "node_modules"]
 }
