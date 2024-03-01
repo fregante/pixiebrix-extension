@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { add } from "@/add";
+import { add } from "./add";
 
 it("adds", () => {
   expect(add(1, 2)).toStrictEqual(3);

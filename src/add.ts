@@ -16,6 +16,7 @@
  */
 export const add = (a: number, b: number) => {
   const res = a + b;
+  // adding a breakpoint here, and then running the test in debug mode in intellij doesn't work.
   console.log(res);
   return res;
 };
