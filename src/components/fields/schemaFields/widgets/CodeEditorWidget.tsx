@@ -21,11 +21,7 @@ import AceEditor from "@/vendors/AceEditor";
 import { useField } from "formik";
 
 const CodeEditorWidget: React.VFC<SchemaFieldProps> = ({ name }) => {
-  const [{ value }, , { setValue }] = useField<string | undefined>(name);
-
-  const onChange = async (newValue: string) => {
-    await setValue(newValue);
-  };
+  const [{ value, onChange }] = useField<string | undefined>(name);
 
   return (
     <Suspense fallback={<div className="text-muted">Loading...</div>}>

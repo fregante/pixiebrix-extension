@@ -27,7 +27,7 @@ import { type Organization } from "@/types/contract";
 
 const SharingTable: React.FunctionComponent = () => {
   const { data: organizations = [] } = useGetOrganizationsQuery();
-  const [publicField, , { setValue: setPublic }] = useField("public");
+  const [publicField] = useField("public");
   const [organizationsField, , { setValue: setOrganizations }] =
     useField<Array<Organization["id"]>>("organizations");
 
@@ -36,12 +36,7 @@ const SharingTable: React.FunctionComponent = () => {
       <tbody>
         <tr>
           <td width="100">
-            <BootstrapSwitchButton
-              onlabel=" "
-              offlabel=" "
-              checked={publicField.value}
-              onChange={setPublic}
-            />
+            <BootstrapSwitchButton onlabel=" " offlabel=" " {...publicField} />
           </td>
           <td>
             {publicField.value ? (

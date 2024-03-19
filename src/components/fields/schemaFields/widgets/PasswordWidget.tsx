@@ -16,7 +16,7 @@
  */
 import styles from "./PasswordWidget.module.scss";
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Button,
   // eslint-disable-next-line no-restricted-imports -- TODO: Fix over time
@@ -42,28 +42,19 @@ const PasswordWidget: React.VFC<SchemaFieldProps & FormControlProps> = ({
   inputRef: inputRefProp,
   ...restProps
 }) => {
-  const [{ value }, , { setValue }] = useField<string>(name);
+  const [field] = useField<string>(name);
   const [show, setShow] = useState<boolean>(false);
 
   const defaultInputRef = useRef<HTMLElement>();
   const inputRef = inputRefProp ?? defaultInputRef;
   useAutoFocusConfiguration({ elementRef: inputRef, focus: focusInput });
 
-  const onChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(
-    async ({ target }) => {
-      await setValue(target.value);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- don't include formik helpers
-    [],
-  );
-
   return (
     <InputGroup>
       <Form.Control
+        {...field}
         {...restProps}
         type={show ? "text" : "password"}
-        value={value}
-        onChange={onChange}
         ref={inputRef}
       />
       <InputGroup.Append>

@@ -71,7 +71,7 @@ function useSetInitialValueForField({
     ) {
       await setValue(inputModeOptions[0].interpretValue(value));
     }
-    // We include setValue in the dependencies becuase sometimes the formik
+    // We include setValue in the dependencies because sometimes the formik
     // helpers reference (setValue) changes, so we need to account for that in the dependencies
     // See: https://github.com/pixiebrix/pixiebrix-extension/issues/2269
   }, [setValue, renderRef.current]);

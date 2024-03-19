@@ -20,7 +20,7 @@ import { useField } from "formik";
 import BootstrapSwitchButton from "bootstrap-switch-button-react";
 
 const ToggleField: React.FunctionComponent<{ name: string }> = ({ name }) => {
-  const [field, , helpers] = useField(name);
+  const [field] = useField(name);
   return (
     <BootstrapSwitchButton
       size="xs"
@@ -29,10 +29,7 @@ const ToggleField: React.FunctionComponent<{ name: string }> = ({ name }) => {
       onlabel=" "
       offlabel=" "
       style="align-self-center"
-      checked={field.value ?? false}
-      onChange={async (value) => {
-        await helpers.setValue(value);
-      }}
+      {...field}
     />
   );
 };

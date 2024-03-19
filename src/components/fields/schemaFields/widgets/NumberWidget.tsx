@@ -51,21 +51,13 @@ const NumberWidget: React.VFC<
   inputRef: inputRefProp,
   ...restProps
 }) => {
-  const [{ value: formValue }, , { setValue: setFormValue }] =
-    useField<number>(name);
-  const [value, setValue] = useState<string>(String(formValue));
+  const [field, , { setValue: setFormValue }] = useField<number>(name);
+  const [value, setValue] = useState<string>(String(field.value));
 
   const defaultInputRef = useRef<HTMLElement>();
   const inputRef = inputRefProp ?? defaultInputRef;
 
   useAutoFocusConfiguration({ elementRef: inputRef, focus: focusInput });
-
-  const onChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(
-    ({ target }) => {
-      setValue(target.value);
-    },
-    [],
-  );
 
   const onBlur: FocusEventHandler<HTMLInputElement> = useCallback(async () => {
     const numberValue = Number(value);
@@ -77,10 +69,9 @@ const NumberWidget: React.VFC<
   return (
     // Spread the input props first so that we override the explicit ones below
     <Form.Control
+      {...field}
       {...restProps}
       type="number"
-      value={value}
-      onChange={onChange}
       onBlur={onBlur}
       step={step ? String(step) : ""}
       ref={inputRef}
