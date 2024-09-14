@@ -21,7 +21,7 @@ import { cloneDeep, isEmpty, isEqual, merge, omit, pick } from "lodash";
 import { BusinessError } from "@/errors/businessErrors";
 import { type Except, type JsonObject } from "type-fest";
 import { assertPlatformCapability } from "@/platform/platformContext";
-import { assertNotNullish } from "@/utils/nullishUtils";
+import { assertNotNullish, type Nullishable } from "@/utils/nullishUtils";
 import { type ModComponentRef } from "@/types/modComponentTypes";
 import {
   MergeStrategies,
@@ -37,17 +37,18 @@ import { type ModVariablesDefinition } from "@/types/modDefinitionTypes";
 import { validateRegistryId } from "@/types/helpers";
 import { Storage } from "webextension-polyfill";
 import StorageChange = Storage.StorageChange;
+import { emptyModVariablesDefinitionFactory } from "@/utils/modUtils";
 
+// The exact prefix is not important. Pick one that is unlikely to collide with other keys.
 const keyPrefix = "#modVariables/";
 
 const SCHEMA_POLICY_PROP = "x-sync-policy";
 
 /**
- * Map from mod variable name to it synchronization policy.
- *
+ * Map from mod variable name to its synchronization policy.
  * Excludes variables with SyncPolicies.NONE.
  */
-type ModSyncPolicy = Record<string, typeof SyncPolicies.SESSION>;
+type VariableSyncPolicyMapping = Record<string, typeof SyncPolicies.SESSION>;
 
 /**
  * Map from mod component id to its private state.
@@ -61,8 +62,12 @@ const framePrivateState = new Map<UUID, JsonObject>();
 // eslint-disable-next-line local-rules/persistBackgroundData -- content script state
 const frameModState = new Map<RegistryId | null, JsonObject>();
 
+/**
+ * Map from mod id to its variable synchronization policy.
+ * @since 2.12
+ */
 // eslint-disable-next-line local-rules/persistBackgroundData -- content script state
-const modSyncPolicies = new Map<RegistryId, ModSyncPolicy>();
+const modSyncPolicies = new Map<RegistryId, VariableSyncPolicyMapping>();
 
 function getSessionStorageKey(modId: RegistryId): string {
   return `${keyPrefix}${modId}`;
@@ -276,7 +281,7 @@ export async function getState({
 
 function mapModVariablesToModSyncPolicy(
   variables: ModVariablesDefinition,
-): ModSyncPolicy {
+): VariableSyncPolicyMapping {
   return Object.fromEntries(
     Object.entries(variables.schema.properties ?? {})
       .map(([key, definition]) => {
@@ -332,13 +337,17 @@ function onSessionStorageChange(
 /**
  * Register variables and their synchronization policy for a mod.
  * @param modId the mod registry id
- * @param variables the mod variables definition containing their synchronization policy
+ * @param variables the mod variables definition containing their synchronization policy. If nullish, a blank policy
+ * is registered.
+ * @see emptyModVariablesDefinitionFactory
  */
 export function registerModVariables(
   modId: RegistryId,
-  variables: ModVariablesDefinition,
+  variables: Nullishable<ModVariablesDefinition>,
 ): void {
-  const modSyncPolicy = mapModVariablesToModSyncPolicy(variables);
+  const modSyncPolicy = mapModVariablesToModSyncPolicy(
+    variables ?? emptyModVariablesDefinitionFactory(),
+  );
   modSyncPolicies.set(modId, modSyncPolicy);
 
   // If any variables are set to sync, listen for changes to session storage to notify the mods running on this page
@@ -350,4 +359,5 @@ export function registerModVariables(
 export function TEST_resetState(): void {
   framePrivateState.clear();
   frameModState.clear();
+  modSyncPolicies.clear();
 }
