@@ -21,6 +21,8 @@ import type {
 } from "@/platform/state/stateTypes";
 import type { Except, JsonObject } from "type-fest";
 import type { ModComponentRef } from "@/types/modComponentTypes";
+import type { RegistryId } from "@/types/registryTypes";
+import type { ModVariablesDefinition } from "@/types/modDefinitionTypes";
 
 /**
  * The variable store/state for the platform.
@@ -51,4 +53,19 @@ export type StateProtocol = {
     data: JsonObject;
     mergeStrategy: MergeStrategy;
   }): Promise<JsonObject>;
+
+  /**
+   * Register variables and their synchronization policy for a mod.
+   *
+   * Mods can write to variable names dynamically, but declaring variables supports automatic synchronization across
+   * tabs/frames, and better development support (e.g., type checking, descriptions, etc.)
+   *
+   * @param modId the mod id
+   * @param variables the mod variables definition
+   * @since 2.1.2
+   */
+  registerModVariables(
+    modId: RegistryId,
+    variables: ModVariablesDefinition,
+  ): void;
 };

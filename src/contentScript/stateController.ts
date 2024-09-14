@@ -17,7 +17,7 @@
 
 import { type UUID } from "@/types/stringTypes";
 import { type RegistryId } from "@/types/registryTypes";
-import { cloneDeep, isEqual, merge } from "lodash";
+import { cloneDeep, isEmpty, isEqual, merge, omit, pick } from "lodash";
 import { BusinessError } from "@/errors/businessErrors";
 import { type Except, type JsonObject } from "type-fest";
 import { assertPlatformCapability } from "@/platform/platformContext";
@@ -30,16 +30,84 @@ import {
   type StateChangeEventDetail,
   type StateNamespace,
   StateNamespaces,
+  SyncPolicies,
+  type SyncPolicy,
 } from "@/platform/state/stateTypes";
+import { type ModVariablesDefinition } from "@/types/modDefinitionTypes";
+import { validateRegistryId } from "@/types/helpers";
+import { Storage } from "webextension-polyfill";
+import StorageChange = Storage.StorageChange;
 
-// eslint-disable-next-line local-rules/persistBackgroundData -- content script
-const privateState = new Map<UUID, JsonObject>();
+const keyPrefix = "#modVariables/";
+
+const SCHEMA_POLICY_PROP = "x-sync-policy";
 
 /**
- * The mod page state or null for shared page state.
+ * Map from mod variable name to it synchronization policy.
+ *
+ * Excludes variables with SyncPolicies.NONE.
  */
-// eslint-disable-next-line local-rules/persistBackgroundData -- content script
-const modState = new Map<RegistryId | null, JsonObject>();
+type ModSyncPolicy = Record<string, typeof SyncPolicies.SESSION>;
+
+/**
+ * Map from mod component id to its private state.
+ */
+// eslint-disable-next-line local-rules/persistBackgroundData -- content script state
+const framePrivateState = new Map<UUID, JsonObject>();
+
+/**
+ * Map from mod id to its mod state. Or null key for public page state.
+ */
+// eslint-disable-next-line local-rules/persistBackgroundData -- content script state
+const frameModState = new Map<RegistryId | null, JsonObject>();
+
+// eslint-disable-next-line local-rules/persistBackgroundData -- content script state
+const modSyncPolicies = new Map<RegistryId, ModSyncPolicy>();
+
+function getSessionStorageKey(modId: RegistryId): string {
+  return `${keyPrefix}${modId}`;
+}
+
+/**
+ * Returns the current state of the mod variables according to the mod's variable synchronization policy.
+ */
+async function getModVariableState(modId: RegistryId): Promise<JsonObject> {
+  const modPolicy = modSyncPolicies.get(modId);
+  const syncedVariableNames = Object.keys(modPolicy ?? {});
+
+  let synced = {};
+
+  if (!isEmpty(modPolicy)) {
+    const key = getSessionStorageKey(modId);
+    // Skip call if there are no synchronized variables
+    const value = await browser.storage.session.get(key);
+    // eslint-disable-next-line security/detect-object-injection -- key passed to .get
+    synced = value[key] ?? {};
+  }
+
+  const local = frameModState.get(modId) ?? {};
+
+  return {
+    ...omit(local, syncedVariableNames),
+    ...pick(synced, syncedVariableNames),
+  };
+}
+
+async function updateModVariableState(
+  modId: RegistryId,
+  nextState: JsonObject,
+): Promise<void> {
+  const modPolicy = modSyncPolicies.get(modId);
+  const syncedVariableNames = Object.keys(modPolicy ?? {});
+
+  frameModState.set(modId, omit(nextState, syncedVariableNames));
+
+  if (!isEmpty(modPolicy)) {
+    const key = getSessionStorageKey(modId);
+    const synced = pick(nextState, syncedVariableNames);
+    await browser.storage.session.set({ [key]: synced });
+  }
+}
 
 function mergeState(
   previous: JsonObject,
@@ -75,11 +143,24 @@ function dispatchStateChangeEventOnChange({
   namespace,
   modComponentRef: { modComponentId, modId },
 }: {
-  previous: unknown;
-  next: unknown;
+  previous: JsonObject;
+  next: JsonObject;
   namespace: StateNamespace;
   modComponentRef: Except<ModComponentRef, "starterBrickId">;
 }) {
+  const modPolicy = modSyncPolicies.get(modId);
+  const syncedVariableNames = Object.keys(modPolicy ?? {});
+
+  if (
+    !isEqual(
+      pick(previous, syncedVariableNames),
+      pick(next, syncedVariableNames),
+    )
+  ) {
+    // Skip firing because it will be fired by the session storage listener
+    return;
+  }
+
   if (!isEqual(previous, next)) {
     // For now, leave off the event data because state controller in the content script uses JavaScript/DOM
     // events, which is a public channel (the host site/other extensions can see the event).
@@ -91,11 +172,12 @@ function dispatchStateChangeEventOnChange({
 
     console.debug("Dispatching statechange", detail);
 
-    const event = new CustomEvent(STATE_CHANGE_JS_EVENT_TYPE, {
-      detail,
-      bubbles: true,
-    });
-    document.dispatchEvent(event);
+    document.dispatchEvent(
+      new CustomEvent(STATE_CHANGE_JS_EVENT_TYPE, {
+        detail,
+        bubbles: true,
+      }),
+    );
   }
 }
 
@@ -125,17 +207,17 @@ export async function setState({
 
   switch (namespace) {
     case StateNamespaces.PUBLIC: {
-      const previous = modState.get(null) ?? {};
+      const previous = frameModState.get(null) ?? {};
       const next = mergeState(previous, data, mergeStrategy);
-      modState.set(null, next);
+      frameModState.set(null, next);
       notifyOnChange(previous, next);
       return next;
     }
 
     case StateNamespaces.MOD: {
-      const previous = modState.get(modId) ?? {};
+      const previous = await getModVariableState(modId);
       const next = mergeState(previous, data, mergeStrategy);
-      modState.set(modId, next);
+      await updateModVariableState(modId, next);
       notifyOnChange(previous, next);
       return next;
     }
@@ -145,9 +227,9 @@ export async function setState({
         modComponentId,
         "Invalid context: mod component id not found",
       );
-      const previous = privateState.get(modComponentId) ?? {};
+      const previous = framePrivateState.get(modComponentId) ?? {};
       const next = mergeState(previous, data, mergeStrategy);
-      privateState.set(modComponentId, next);
+      framePrivateState.set(modComponentId, next);
       notifyOnChange(previous, next);
       return next;
     }
@@ -170,11 +252,11 @@ export async function getState({
 
   switch (namespace) {
     case StateNamespaces.PUBLIC: {
-      return modState.get(null) ?? {};
+      return frameModState.get(null) ?? {};
     }
 
     case StateNamespaces.MOD: {
-      return modState.get(modId) ?? {};
+      return getModVariableState(modId);
     }
 
     case StateNamespaces.PRIVATE: {
@@ -182,7 +264,7 @@ export async function getState({
         modComponentId,
         "Invalid context: mod component id not found",
       );
-      return privateState.get(modComponentId) ?? {};
+      return framePrivateState.get(modComponentId) ?? {};
     }
 
     default: {
@@ -192,7 +274,80 @@ export async function getState({
   }
 }
 
+function mapModVariablesToModSyncPolicy(
+  variables: ModVariablesDefinition,
+): ModSyncPolicy {
+  return Object.fromEntries(
+    Object.entries(variables.schema.properties ?? {})
+      .map(([key, definition]) => {
+        // eslint-disable-next-line security/detect-object-injection -- constant
+        const variablePolicy = (definition as UnknownObject)[
+          SCHEMA_POLICY_PROP
+        ] as SyncPolicy | undefined;
+
+        if (variablePolicy && variablePolicy !== SyncPolicies.NONE) {
+          if (variablePolicy !== SyncPolicies.SESSION) {
+            throw new BusinessError(
+              `Unsupported sync policy: ${variablePolicy}`,
+            );
+          }
+
+          return [key, variablePolicy] satisfies [string, SyncPolicy];
+        }
+
+        return null;
+      })
+      .filter((x) => x != null),
+  );
+}
+
+// Keep as separate method so it's safe to call addListener multiple times with the listener
+function onSessionStorageChange(
+  change: Record<string, StorageChange>,
+  areaName: string,
+): void {
+  if (areaName === "session") {
+    for (const key of Object.keys(change)) {
+      if (key.startsWith(keyPrefix)) {
+        const modId = validateRegistryId(key.slice(keyPrefix.length));
+
+        const detail = {
+          namespace: StateNamespaces.MOD,
+          blueprintId: modId,
+        } satisfies StateChangeEventDetail;
+
+        console.debug("Dispatching statechange", detail);
+
+        document.dispatchEvent(
+          new CustomEvent(STATE_CHANGE_JS_EVENT_TYPE, {
+            detail,
+            bubbles: true,
+          }),
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Register variables and their synchronization policy for a mod.
+ * @param modId the mod registry id
+ * @param variables the mod variables definition containing their synchronization policy
+ */
+export function registerModVariables(
+  modId: RegistryId,
+  variables: ModVariablesDefinition,
+): void {
+  const modSyncPolicy = mapModVariablesToModSyncPolicy(variables);
+  modSyncPolicies.set(modId, modSyncPolicy);
+
+  // If any variables are set to sync, listen for changes to session storage to notify the mods running on this page
+  if (!isEmpty(modSyncPolicy)) {
+    browser.storage.onChanged.addListener(onSessionStorageChange);
+  }
+}
+
 export function TEST_resetState(): void {
-  privateState.clear();
-  modState.clear();
+  framePrivateState.clear();
+  frameModState.clear();
 }
