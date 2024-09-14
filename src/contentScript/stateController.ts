@@ -17,7 +17,7 @@
 
 import { type UUID } from "@/types/stringTypes";
 import { type RegistryId } from "@/types/registryTypes";
-import { cloneDeep, isEmpty, isEqual, merge, omit, pick } from "lodash";
+import { cloneDeep, isEmpty, isEqual, merge, omit, pick, pickBy } from "lodash";
 import { BusinessError } from "@/errors/businessErrors";
 import { type Except, type JsonObject } from "type-fest";
 import { assertPlatformCapability } from "@/platform/platformContext";
@@ -38,17 +38,20 @@ import { validateRegistryId } from "@/types/helpers";
 import { Storage } from "webextension-polyfill";
 import StorageChange = Storage.StorageChange;
 import { emptyModVariablesDefinitionFactory } from "@/utils/modUtils";
+import { getThisFrame } from "webext-messenger";
 
 // The exact prefix is not important. Pick one that is unlikely to collide with other keys.
 const keyPrefix = "#modVariables/";
 
 const SCHEMA_POLICY_PROP = "x-sync-policy";
 
+type Synced = Exclude<SyncPolicy, typeof SyncPolicies.NONE>;
+
 /**
  * Map from mod variable name to its synchronization policy.
  * Excludes variables with SyncPolicies.NONE.
  */
-type VariableSyncPolicyMapping = Record<string, typeof SyncPolicies.SESSION>;
+type VariableSyncPolicyMapping = Record<string, Synced>;
 
 /**
  * Map from mod component id to its private state.
@@ -69,8 +72,16 @@ const frameModState = new Map<RegistryId | null, JsonObject>();
 // eslint-disable-next-line local-rules/persistBackgroundData -- content script state
 const modSyncPolicies = new Map<RegistryId, VariableSyncPolicyMapping>();
 
-function getSessionStorageKey(modId: RegistryId): string {
-  return `${keyPrefix}${modId}`;
+function getSessionStorageKey(
+  modId: RegistryId,
+  {
+    tabId,
+  }: {
+    tabId?: number;
+  } = {},
+): string {
+  const subkey = JSON.stringify({ tabId: tabId ?? "all", modId });
+  return `${keyPrefix}${subkey}`;
 }
 
 /**
@@ -78,23 +89,41 @@ function getSessionStorageKey(modId: RegistryId): string {
  */
 async function getModVariableState(modId: RegistryId): Promise<JsonObject> {
   const modPolicy = modSyncPolicies.get(modId);
-  const syncedVariableNames = Object.keys(modPolicy ?? {});
+  const sessionVariableNames = Object.keys(
+    pickBy(modPolicy ?? {}, (x) => x === SyncPolicies.SESSION),
+  );
+  const tabVariableNames = Object.keys(
+    pickBy(modPolicy ?? {}, (x) => x === SyncPolicies.TAB),
+  );
+  const syncedVariableNames = [...sessionVariableNames, ...tabVariableNames];
 
-  let synced = {};
+  let sessionData = {};
 
-  if (!isEmpty(modPolicy)) {
+  if (!isEmpty(sessionVariableNames)) {
     const key = getSessionStorageKey(modId);
     // Skip call if there are no synchronized variables
     const value = await browser.storage.session.get(key);
     // eslint-disable-next-line security/detect-object-injection -- key passed to .get
-    synced = value[key] ?? {};
+    sessionData = value[key] ?? {};
+  }
+
+  let tabData = {};
+
+  if (!isEmpty(tabVariableNames)) {
+    const { tabId } = await getThisFrame();
+    const key = getSessionStorageKey(modId, { tabId });
+    // Skip call if there are no synchronized variables
+    const value = await browser.storage.session.get(key);
+    // eslint-disable-next-line security/detect-object-injection -- key passed to .get
+    tabData = value[key] ?? {};
   }
 
   const local = frameModState.get(modId) ?? {};
 
   return {
     ...omit(local, syncedVariableNames),
-    ...pick(synced, syncedVariableNames),
+    ...pick(sessionData, sessionVariableNames),
+    ...pick(tabData, tabVariableNames),
   };
 }
 
@@ -103,14 +132,27 @@ async function updateModVariableState(
   nextState: JsonObject,
 ): Promise<void> {
   const modPolicy = modSyncPolicies.get(modId);
-  const syncedVariableNames = Object.keys(modPolicy ?? {});
+  const sessionVariableNames = Object.keys(
+    pickBy(modPolicy ?? {}, (x) => x === SyncPolicies.SESSION),
+  );
+  const tabVariableNames = Object.keys(
+    pickBy(modPolicy ?? {}, (x) => x === SyncPolicies.TAB),
+  );
+  const syncedVariableNames = [...sessionVariableNames, ...tabVariableNames];
 
   frameModState.set(modId, omit(nextState, syncedVariableNames));
 
-  if (!isEmpty(modPolicy)) {
+  if (!isEmpty(sessionVariableNames)) {
     const key = getSessionStorageKey(modId);
-    const synced = pick(nextState, syncedVariableNames);
-    await browser.storage.session.set({ [key]: synced });
+    const sessionData = pick(nextState, sessionVariableNames);
+    await browser.storage.session.set({ [key]: sessionData });
+  }
+
+  if (!isEmpty(tabVariableNames)) {
+    const { tabId } = await getThisFrame();
+    const key = getSessionStorageKey(modId, { tabId });
+    const tabData = pick(nextState, tabVariableNames);
+    await browser.storage.session.set({ [key]: tabData });
   }
 }
 
@@ -291,7 +333,10 @@ function mapModVariablesToModSyncPolicy(
         ] as SyncPolicy | undefined;
 
         if (variablePolicy && variablePolicy !== SyncPolicies.NONE) {
-          if (variablePolicy !== SyncPolicies.SESSION) {
+          if (
+            variablePolicy !== SyncPolicies.SESSION &&
+            variablePolicy !== SyncPolicies.TAB
+          ) {
             throw new BusinessError(
               `Unsupported sync policy: ${variablePolicy}`,
             );

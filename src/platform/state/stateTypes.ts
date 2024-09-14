@@ -40,7 +40,17 @@ export type StateNamespace = ValueOf<typeof StateNamespaces>;
  * @since 2.1.2
  */
 export const SyncPolicies = {
+  /**
+   * Do not sync state changes.
+   */
   NONE: "none",
+  /**
+   * Sync changes across all frames in the same tab. Cleared when the tab is closed, or the page is reloaded.
+   */
+  TAB: "tab",
+  /**
+   * Syncs state changes across all tabs and frames in the browser session. Cleared on browser profile restarts.
+   */
   SESSION: "session",
 };
 
