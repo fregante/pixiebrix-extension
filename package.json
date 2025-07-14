@@ -38,5 +38,11 @@
     "nx": "20.1.0",
     "prettier": "3.3.3",
     "typescript": "^5.6.3"
+  },
+  "overrides": {
+    "es-set-tostringtag": "npm:@nolyfill/es-set-tostringtag@^1",
+    "hasown": "npm:@nolyfill/hasown@^1",
+    "is-core-module": "npm:@nolyfill/is-core-module@^1",
+    "safe-buffer": "npm:@nolyfill/safe-buffer@^1"
   }
 }
